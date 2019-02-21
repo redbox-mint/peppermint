@@ -79,18 +79,18 @@ boolean isCollectionOrArray(object) {
     [Collection, Object[]].any { it.isAssignableFrom(object.getClass()) }
 }
 
-def ensureIdsAreCleanAndShinyAndNiceAndWonderful(data) {
+def ensureIdsAreCleanAndShinyAndNiceAndWonderfulIRIs(data) {
 	def modified = []
 	data.eachWithIndex {entry, idx ->
 		def modEntry = [:]
-		if (entry instanceof Map) {
+		if (entry instanceof Map || isCollectionOrArray(entry)) {
 			entry.each {key, val ->
 				if (key == '@id') {
 					modEntry['id_orig'] = val
 					modEntry['@id'] = val.replaceAll(/\s/, '_')
 				} else
-				if (isCollectionOrArray(val)) {
-					modEntry[key] = ensureIdsAreCleanAndShinyAndNiceAndWonderful(val)
+				if (isCollectionOrArray(val) || val instanceof Map) {
+					modEntry[key] = ensureIdsAreCleanAndShinyAndNiceAndWonderfulIRIs(val)
 				} else {
 					modEntry[key] = val
 				}
@@ -112,8 +112,11 @@ def document = [:]
 manager.getBindings().put('docList', docList)
 manager.getBindings().put('document', document)
 ensureSchemaOrgHttps(data)
-data['@graph'] = ensureIdsAreCleanAndShinyAndNiceAndWonderful(data['@graph'])
-
+// WARNING: the config setting below will remove spaces in the @id fields (saving the original value in 'id_orig').
+// This may result in a broken IRI. Explicitly set `config.disableCleanOfIds` to true to prevent this.
+if (!config.disableCleanupOfIds) {
+	data['@graph'] = ensureIdsAreCleanAndShinyAndNiceAndWonderfulIRIs(data['@graph'])
+}
 
 def slurper = new JsonSlurper()
 // def jsonStr = JsonOutput.toJson(data['@graph'])
@@ -126,7 +129,14 @@ document["record_format_s"] = recordTypeConfig['format']
 document['_childDocuments_'] = []
 
 JsonLdOptions options = new JsonLdOptions()
-def compacted = JsonLdProcessor.compact(data, context, options);
+def compacted = null
+try {
+	compacted = JsonLdProcessor.compact(data, context, options);
+} catch (IllegalArgumentException e) {
+	logger.error("Exception in parsing JSONLD, make sure your '@id' values are valid IRIs, etc. See stacktrace below for more information.")
+	// bubble up the exception, so stack trace can be printed...
+	throw e
+}
 if (compacted['@graph']) {
 	// find the root node of the graph...
 	def rootNodeId = recordTypeConfig['rootNodeFieldContextId']
