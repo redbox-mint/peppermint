@@ -7,20 +7,18 @@
  *
  */
 import groovy.json.*;
-
+import static scripts.jsonldparse.utils.*;
 //-------------------------------------------------------
 // Init, executed once to grab dependencies
 //-------------------------------------------------------
 try {
 	if (initRun) {
-		println "Add Person, init okay."
+		println "Flattened Child script, init okay."
 		return
 	}
 } catch (e) {
 	// swallowing
 }
-
-evaluate(new File('scripts/jsonld-parse/utils.groovy'))
 
 //-------------------------------------------------------
 // Script Fns
@@ -30,14 +28,19 @@ evaluate(new File('scripts/jsonld-parse/utils.groovy'))
 // Start of Script
 //-------------------------------------------------------
 def doc = [:]
-def newDoc = [:]
-def personConfig = config['recordType']['person']
-newDoc['record_type_s'] = personConfig['recordTypeName']
-newDoc["record_format_s"] = personConfig['format']
-newDoc['_childDocuments_'] = []
 def entryTypeFieldName = enforceSolrFieldNames(entryType)
+def rootEntryDoc = [:]
+
 entry.each { k, v ->
-	addKvAndFacetsToDocument(data, k, v, [doc, newDoc], newDoc, personConfig, entryTypeFieldName)
+	addKvAndFacetsToDocument(data, k, v, [doc, rootEntryDoc], rootEntryDoc, recordTypeConfig, entryTypeFieldName)
 }
-// docList << [document: newDoc, core: personConfig.core]
+// check if the documents have IDs, otherwise don't add
+if (!doc['id'] || !rootEntryDoc['id']) {
+	logger.info("Document has no ID, ignoring:")
+	logger.info(JsonOutput.toJson(doc))
+	return
+}
+doc['child_id'] = doc['id']
+doc['id'] = "${document['id']}_${doc['id']}"
 document['_childDocuments_'] << doc
+docList << [document: rootEntryDoc, core: recordTypeConfig.core]

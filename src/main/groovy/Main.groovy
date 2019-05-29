@@ -101,6 +101,8 @@ def router = Router.router(vertx)
 // install the default body handler
 router.route().handler(BodyHandler.create())
 router.route().handler(new BearerAuthHandler(new BearerAuthProvider(config.token)));
+// define holder for compiled scripts
+def compiledScripts = [:]
 // build the routers based on configuration
 config.routes.each { routeConfig ->
 	logger.info("Listening to route: ${routeConfig.method}:${routeConfig.path}")
@@ -113,6 +115,7 @@ config.routes.each { routeConfig ->
 		manager.setBindings(binding);
 		binding.put('manager', manager);
 		def output = [results:[]]
+		binding.put('compiledScripts', compiledScripts)
 		data.records.each{ record ->
 			binding.put("data", record)
 			binding.put("scriptOutput", record)
@@ -132,8 +135,13 @@ config.routes.each { routeConfig ->
 				def sw = new StringWriter()
 				def pw = new PrintWriter(sw, true)
 				try {
-
-					def scriptOutput = engine.eval(new FileReader(scriptPath))
+					// try to compile and cache scripts..
+					if (!compiledScripts[scriptPath]) {
+						def reader = new FileReader(scriptPath)
+						compiledScripts[scriptPath] = ((Compilable) engine).compile(reader)
+						reader.close()
+					}
+					def scriptOutput = compiledScripts[scriptPath].eval(binding)
 					binding.put("scriptOutput", scriptOutput)
 				} catch (e) {
 					logger.error("Error running script for record type: ${recType}: ${scriptPath}")
@@ -141,6 +149,9 @@ config.routes.each { routeConfig ->
 					logger.error("Stack trace:  ")
 					logger.error(sw.toString())
 					success = false
+				} finally {
+					pw.close()
+					sw.close()
 				}
 				outputEntry.scripts[scriptPathObj.getFileName()] = [success: success]
 			}

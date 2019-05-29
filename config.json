@@ -26,18 +26,18 @@
       "rootNodeFieldValues": ["data/", "./"],
       "types": {
         "rootNode": [
-          "scripts/jsonld-parse/add-root-dataset.groovy",
-          "scripts/jsonld-parse/add-oaipmh.groovy"
+          "scripts/jsonldparse/add-root-dataset.groovy",
+          "scripts/jsonldparse/add-oaipmh.groovy"
         ],
         "https://schema.org/Person": [
-          "scripts/jsonld-parse/add-person.groovy"
+          "scripts/jsonldparse/add-person.groovy"
         ],
         "http://schema.org/GeoCoordinates": [
-          "scripts/jsonld-parse/add-flattened-child.groovy",
-          "scripts/jsonld-parse/geojson.groovy"
+          "scripts/jsonldparse/add-flattened-child.groovy",
+          "scripts/jsonldparse/geojson.groovy"
         ]
       },
-      "defaultHandlerScript": "scripts/jsonld-parse/add-flattened-child.groovy",
+      "defaultHandlerScript": "scripts/jsonldparse/add-flattened-child.groovy",
       "facets": {
         "https://schema.org/datePublished": {
           "trim": true
@@ -69,7 +69,7 @@
       "core": "dataset",
       "format": "jsonld",
       "recordTypeName": "person",
-      "defaultHandlerScript": "scripts/jsonld-parse/add-flattened-child.groovy",
+      "defaultHandlerScript": "scripts/jsonldparse/add-flattened-child.groovy",
       "facets": {
         "https://schema.org/birthPlace": {
           "trim": true

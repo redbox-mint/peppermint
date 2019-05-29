@@ -11,7 +11,7 @@ import java.io.*;
 import groovy.json.*;
 import com.github.jsonldjava.core.*;
 import com.github.jsonldjava.utils.*;
-
+import javax.script.*;
 //-------------------------------------------------------
 // Init, executed once to grab dependencies
 //-------------------------------------------------------
@@ -27,6 +27,16 @@ try {
 // Script Fns
 //-------------------------------------------------------
 
+def loadScript(s) {
+	if (!compiledScripts[s]) {
+		def reader = new FileReader(s)
+		compiledScripts[s] = ((Compilable)engine).compile(reader)
+		reader.close()
+	} else {
+		logger.info("Using cached version of: ${s}")
+	}
+}
+
 def processEntry(manager, engine, entry, type, useDefaultHandler) {
 	def sw = new StringWriter()
 	def pw = new PrintWriter(sw, true)
@@ -38,7 +48,8 @@ def processEntry(manager, engine, entry, type, useDefaultHandler) {
 		// assumes groovy for now
 		try {
 			script.each { s ->
-				engine.eval(new FileReader(s))
+				loadScript(s)
+				compiledScripts[s].eval(manager.getBindings())
 			}
 		} catch (e) {
 			logger.error("Failed to run: ${script}");
@@ -51,7 +62,8 @@ def processEntry(manager, engine, entry, type, useDefaultHandler) {
 			script = recordTypeConfig['defaultHandlerScript']
 			if (script) {
 				try {
-					engine.eval(new FileReader(script))
+					loadScript(script)
+					compiledScripts[script].eval(manager.getBindings())
 				} catch (e) {
 					logger.error("Failed to run: ${script}");
 					logger.error(e)
@@ -111,6 +123,8 @@ def document = [:]
 // put the document list
 manager.getBindings().put('docList', docList)
 manager.getBindings().put('document', document)
+def compiledScripts = manager.getBindings().get('compiledScripts')
+
 ensureSchemaOrgHttps(data)
 // WARNING: the config setting below will remove spaces in the @id fields (saving the original value in 'id_orig').
 // This may result in a broken IRI. Explicitly set `config.disableCleanOfIds` to true to prevent this.

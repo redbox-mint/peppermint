@@ -6,26 +6,20 @@
  *  entry - the map containing the JSON entry
  *
  */
-@Grapes([
-	@Grab(group='org.apache.solr', module='solr-solrj', version='7.4.0')
-])
-
-import org.apache.solr.common.*;
 import groovy.json.*;
-
+import static scripts.jsonldparse.utils.*;
 //-------------------------------------------------------
 // Init, executed once to grab dependencies
 //-------------------------------------------------------
 try {
 	if (initRun) {
-		println "Dataset Root Node processor script, init okay."
+		println "Add Person, init okay."
 		return
 	}
 } catch (e) {
 	// swallowing
 }
 
-evaluate(new File('scripts/jsonld-parse/utils.groovy'))
 //-------------------------------------------------------
 // Script Fns
 //-------------------------------------------------------
@@ -33,11 +27,15 @@ evaluate(new File('scripts/jsonld-parse/utils.groovy'))
 //-------------------------------------------------------
 // Start of Script
 //-------------------------------------------------------
-
-// add to the main document
-logger.info("Processing root node....")
-// logger.info(JsonOutput.toJson(entry))
-def entryTypeFieldName = enforceSolrFieldNames("https://schema.org/Dataset")
+def doc = [:]
+def newDoc = [:]
+def personConfig = config['recordType']['person']
+newDoc['record_type_s'] = personConfig['recordTypeName']
+newDoc["record_format_s"] = personConfig['format']
+newDoc['_childDocuments_'] = []
+def entryTypeFieldName = enforceSolrFieldNames(entryType)
 entry.each { k, v ->
-	addKvAndFacetsToDocument(data, k, v, [document], document, recordTypeConfig, entryTypeFieldName)
+	addKvAndFacetsToDocument(data, k, v, [doc, newDoc], newDoc, personConfig, entryTypeFieldName)
 }
+// docList << [document: newDoc, core: personConfig.core]
+document['_childDocuments_'] << doc

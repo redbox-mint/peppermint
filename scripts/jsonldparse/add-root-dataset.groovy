@@ -6,21 +6,24 @@
  *  entry - the map containing the JSON entry
  *
  */
-import groovy.json.*;
+@Grapes([
+	@Grab(group='org.apache.solr', module='solr-solrj', version='7.4.0')
+])
 
+import org.apache.solr.common.*;
+import groovy.json.*;
+import static scripts.jsonldparse.utils.*;
 //-------------------------------------------------------
 // Init, executed once to grab dependencies
 //-------------------------------------------------------
 try {
 	if (initRun) {
-		println "Flattened Child script, init okay."
+		println "Dataset Root Node processor script, init okay."
 		return
 	}
 } catch (e) {
 	// swallowing
 }
-
-evaluate(new File('scripts/jsonld-parse/utils.groovy'))
 
 //-------------------------------------------------------
 // Script Fns
@@ -29,20 +32,11 @@ evaluate(new File('scripts/jsonld-parse/utils.groovy'))
 //-------------------------------------------------------
 // Start of Script
 //-------------------------------------------------------
-def doc = [:]
-def entryTypeFieldName = enforceSolrFieldNames(entryType)
-def rootEntryDoc = [:]
 
+// add to the main document
+logger.info("Processing root node....")
+// logger.info(JsonOutput.toJson(entry))
+def entryTypeFieldName = enforceSolrFieldNames("https://schema.org/Dataset")
 entry.each { k, v ->
-	addKvAndFacetsToDocument(data, k, v, [doc, rootEntryDoc], rootEntryDoc, recordTypeConfig, entryTypeFieldName)
+	addKvAndFacetsToDocument(data, k, v, [document], document, recordTypeConfig, entryTypeFieldName)
 }
-// check if the documents have IDs, otherwise don't add
-if (!doc['id'] || !rootEntryDoc['id']) {
-	logger.info("Document has no ID, ignoring:")
-	logger.info(JsonOutput.toJson(doc))
-	return
-}
-doc['child_id'] = doc['id']
-doc['id'] = "${document['id']}_${doc['id']}"
-document['_childDocuments_'] << doc
-docList << [document: rootEntryDoc, core: recordTypeConfig.core]

@@ -1,6 +1,8 @@
 FROM openjdk:8-jdk-slim
 
 ENV APP_HOME /opt/peppermint
+ENV MEM_START 512m
+ENV MEM_MAX 512m
 EXPOSE 8080
 
 COPY gradlew $APP_HOME/
@@ -14,9 +16,9 @@ COPY config.json $APP_HOME/
 
 COPY support $APP_HOME/support
 RUN cd $APP_HOME && chmod +x support/prep-run.sh && support/prep-run.sh
-
+RUN chmod +x $APP_HOME/support/docker-entrypoint.sh
 RUN cd $APP_HOME && ./gradlew shadowJar
 
 WORKDIR $APP_HOME
-ENTRYPOINT ["sh", "-c"]
-CMD ["exec java -cp ~/.sdkman/candidates/groovy/current/lib/*:./build/libs/peppermint-fat.jar io.vertx.core.Launcher"]
+
+ENTRYPOINT ["support/docker-entrypoint.sh"]

@@ -41,3 +41,8 @@ JSON data transformer for [ReDBox](http://redboxresearchdata.com.au/), and other
 
 ## Building
 - Run command: ` ./gradlew shadowJar`
+
+## Customising
+The `scripts` directory contains some sample scripts that will accept Datacrate JSONs and turn these unto custom Dataset, OAI-PMH and RIF-CS records.
+
+Take note that these scripts are now 'cached' for efficiency, and will thus require a restart of Peppermint for every change.

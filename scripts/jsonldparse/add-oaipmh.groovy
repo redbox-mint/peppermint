@@ -7,6 +7,8 @@
  *
  */
 import groovy.xml.*
+import groovy.json.*
+import static scripts.jsonldparse.utils.*;
 //-------------------------------------------------------
 // Init, executed once to grab dependencies
 //-------------------------------------------------------
@@ -19,12 +21,9 @@ try {
 	// swallowing
 }
 
-evaluate(new File('scripts/jsonld-parse/utils.groovy'))
-
 //-------------------------------------------------------
 // Script Fns
 //-------------------------------------------------------
-
 def getDcDoc(mainDoc) {
 	def oaidcDoc = [:]
 	oaidcDoc['record_type_s'] = "oaipmh_record"
