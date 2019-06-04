@@ -145,51 +145,50 @@ def waitForSolr(coreName) {
     }
   }
 }
-
 //-------------------------------------------------------
 // Start of Script
 //-------------------------------------------------------
 
 logger.info("SOLR schema builder starting...")
-if (config.solr.rebuildSchemaAlways) {
-  logger.info("Rebuilding schema...deleting all existing data for each core.")
-  def postDataStr = "{"
-  config.solr.cores.each { core ->
-    try {
-      waitForSolr(core)
+def postDataStr = "{"
+config.solr.cores.each { core ->
+  try {
+    waitForSolr(core)
+    if (config.solr.clearData) {
+      logger.info("Rebuilding schema...deleting all existing data for each core.")
       deleteIndexData(core)
-    } catch(e) {
-      logger.error(e)
-      logger.error("Error deleting data in core: ${core}, ignoring ,as the core may not exist.")
     }
-    def commandStrArr = []
-    def addField = config.solr.schema[core]['add-field']
-    def addDynamicField = config.solr.schema[core]['add-dynamic-field']
-    def addCopyField = config.solr.schema[core]['add-copy-field']
+  } catch(e) {
+    logger.error(e)
+    logger.error("Error deleting data in core: ${core}, ignoring ,as the core may not exist.")
+  }
+  def commandStrArr = []
+  def addField = config.solr.schema[core]['add-field']
+  def addDynamicField = config.solr.schema[core]['add-dynamic-field']
+  def addCopyField = config.solr.schema[core]['add-copy-field']
 
-    if (addField && addField.size() > 0) {
-      // Not replacing existing as fields might have dependent copyFields which will cause an error when replacing/deleting
-      processConfig(core, 'fields', 'fields', addField, 'add-field', 'replace-field', commandStrArr, false, null, true)
-    }
-    if (addDynamicField && addDynamicField.size() > 0) {
-      processConfig(core, 'dynamicfields', 'dynamicFields', addDynamicField, 'add-dynamic-field', 'replace-dynamic-field', commandStrArr)
-    }
-    if (addCopyField && addCopyField.size() > 0) {
-      def matchClosureFn = { configEntry ->
-        return { existingEntry ->
-          existingEntry.source == configEntry.source && ( configEntry.dest.find { it == existingEntry.dest } )
-        }
+  if (addField && addField.size() > 0) {
+    // Not replacing existing as fields might have dependent copyFields which will cause an error when replacing/deleting
+    processConfig(core, 'fields', 'fields', addField, 'add-field', 'replace-field', commandStrArr, false, null, true)
+  }
+  if (addDynamicField && addDynamicField.size() > 0) {
+    processConfig(core, 'dynamicfields', 'dynamicFields', addDynamicField, 'add-dynamic-field', 'replace-dynamic-field', commandStrArr)
+  }
+  if (addCopyField && addCopyField.size() > 0) {
+    def matchClosureFn = { configEntry ->
+      return { existingEntry ->
+        existingEntry.source == configEntry.source && ( configEntry.dest.find { it == existingEntry.dest } )
       }
-      processConfig(core, 'copyfields', 'copyFields', addCopyField, 'add-copy-field', 'delete-copy-field', commandStrArr, false, matchClosureFn, true)
     }
+    processConfig(core, 'copyfields', 'copyFields', addCopyField, 'add-copy-field', 'delete-copy-field', commandStrArr, false, matchClosureFn, true)
+  }
 
-    postDataStr = "${postDataStr}${commandStrArr.join(',')}}"
-    logger.info("Command str:")
-    logger.info(postDataStr)
-    def schemaUpdateRes = postSchema(core, postDataStr)
-    logger.info(schemaUpdateRes)
-    if (schemaUpdateRes?.responseHeader?.status == 0) {
-      logger.info("Updates for core: ${core}, successful!")
-    }
+  postDataStr = "${postDataStr}${commandStrArr.join(',')}}"
+  logger.info("Command str:")
+  logger.info(postDataStr)
+  def schemaUpdateRes = postSchema(core, postDataStr)
+  logger.info(schemaUpdateRes)
+  if (schemaUpdateRes?.responseHeader?.status == 0) {
+    logger.info("Updates for core: ${core}, successful!")
   }
 }

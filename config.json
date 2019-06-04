@@ -89,7 +89,7 @@
   "solr": {
     "baseUrl": "http://$SOLR_HOST:$SOLR_PORT",
     "cores": ["dataset"],
-    "rebuildSchemaAlways": true,
+    "clearData": true,
     "schema": {
       "dataset": {
         "add-field": [
