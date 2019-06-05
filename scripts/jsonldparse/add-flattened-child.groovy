@@ -42,5 +42,6 @@ if (!doc['id'] || !rootEntryDoc['id']) {
 }
 doc['child_id'] = doc['id']
 doc['id'] = "${document['id']}_${doc['id']}"
+doc['related_records'] = [parentLinkDoc]
 document['_childDocuments_'] << doc
 docList << [document: rootEntryDoc, core: recordTypeConfig.core]

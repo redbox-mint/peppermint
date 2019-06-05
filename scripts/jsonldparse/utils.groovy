@@ -76,13 +76,18 @@ class utils {
       }
   		solrField = 'id'
     } else {
-      if (v instanceof Map || v instanceof List) {
+      if (v instanceof Map || v instanceof Map.Entry || v instanceof List) {
         def expanded = null
-        if (v instanceof Map && v['@id']) {
-          expanded = getGraphEntry(data, v['@id'])
+        if ((v instanceof Map && v.hasProperty('@id') && v['@id']) || (v instanceof Map.Entry && v.key == '@id' && v.value)) {
+          def v_id = v.hasProperty('@id') ? v['@id'] : v.value;
+          expanded = getGraphEntry(data, v_id)
           docs.each { doc ->
             if (expanded) {
-              doc[solrField] = v << expanded
+              if (v instanceof Map.Entry) {
+                doc[solrField] = ['@id': v_id ] << expanded
+              } else {
+                doc[solrField] = v << expanded
+              }
             } else {
               doc[solrField] = renameIds(v)
             }
@@ -112,7 +117,14 @@ class utils {
     def facetConfig = recordTypeConfig.facets[k]
   	if (facetConfig) {
   		def vals = null
-  		def val = facetConfig.fieldName && v instanceof Map  && v.containsKey(facetConfig.fieldName) ?  v[facetConfig.fieldName] : v
+      def val = v
+      if (facetConfig.fieldName) {
+        if (v instanceof Map && v.containsKey(facetConfig.fieldName) ) {
+          val = v[facetConfig.fieldName]
+        } else if (v instanceof Map.Entry && v.key == facetConfig.fieldName) {
+          val = v.value
+        }
+      }
   		if (facetConfig.tokenize) {
   			vals = val ? val.tokenize(facetConfig.tokenize.delim) : val
   		} else {

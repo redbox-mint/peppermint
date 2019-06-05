@@ -159,6 +159,10 @@ if (compacted['@graph']) {
 	def rootNode = data['@graph'].find {
 		return it[rootNodeId] instanceof Collection ? rootNodeVals.intersect(it[rootNodeId]).size() > 0 : rootNodeVals.contains(it[rootNodeId]) // it[rootNodeId] == 'data/' || it[rootNodeId]== './'
 	}
+	def parentDoc = [:]
+	manager.getBindings().put("parentLinkDoc", parentDoc)
+	parentDoc["@id"] = rootNode["@id"]
+	parentDoc["name"] = rootNode["name"]
 	compacted['@graph'].each { entry ->
 		if (entry['@id'] == rootNode['@id']) {
 			processEntry(manager, engine, entry, 'rootNode', false)
