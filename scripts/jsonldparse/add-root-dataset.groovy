@@ -40,3 +40,9 @@ def entryTypeFieldName = enforceSolrFieldNames("https://schema.org/Dataset")
 entry.each { k, v ->
 	addKvAndFacetsToDocument(data, k, v, [document], document, recordTypeConfig, entryTypeFieldName)
 }
+// add the rocrate url
+if (document['https___schema_org_distribution']) {
+	document['https___schema_org_distribution'] << "${config.rocrate_base_url}/${document['id']}/CATALOG.html"
+} else {
+	document['https___schema_org_distribution'] = ["${config.rocrate_base_url}/${document['id']}/CATALOG.html"]
+}
